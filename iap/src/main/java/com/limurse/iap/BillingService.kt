@@ -246,7 +246,7 @@ class BillingService(
                 }
             }
         } else {
-            log("processPurchases: with no purchases")
+            log("=== processPurchases: with no purchases")
         }
     }
 
