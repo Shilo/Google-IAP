@@ -183,25 +183,31 @@ class BillingService(
                 val purchaseSuccess = purchase.purchaseState == Purchase.PurchaseState.PURCHASED
                         || purchase.purchaseState == Purchase.PurchaseState.PENDING
 
+                log("processPurchases. purchase: $purchase purchaseState: ${purchase.purchaseState} purchaseSuccess: $purchaseSuccess")
                 if (purchaseSuccess && purchase.products[0].isProductReady()) {
                     if (!isSignatureValid(purchase)) {
                         log("processPurchases. Signature is not valid for: $purchase")
                         continue@purchases
                     }
 
+                    log("processPurchases. Grant entitlement for: $purchase")
                     // Grant entitlement to the user.
                     val productDetails = productDetails[purchase.products[0]]
                     when (productDetails?.productType) {
                         BillingClient.ProductType.INAPP -> {
                             // Consume the purchase
+                            log("processPurchases. Consume purchase for: $purchase")
                             when {
                                 consumableKeys.contains(purchase.products[0]) -> {
+                                    log("processPurchases. Consuming purchase for: $purchase")
                                     mBillingClient.consumeAsync(
                                         ConsumeParams.newBuilder()
                                             .setPurchaseToken(purchase.purchaseToken).build()
                                     ) { billingResult, _ ->
                                         when (billingResult.responseCode) {
+                                            log("processPurchases. Consume response code: ${billingResult.responseCode}")
                                             BillingClient.BillingResponseCode.OK -> {
+                                                log("processPurchases. Consume OK: $purchase")
                                                 productOwned(getPurchaseInfo(purchase), false)
                                             }
                                             else -> {
@@ -214,6 +220,7 @@ class BillingService(
                                     }
                                 }
                                 else -> {
+                                    log("processPurchases. Not consuming purchase for: $purchase")
                                     productOwned(getPurchaseInfo(purchase), isRestore)
                                 }
                             }
@@ -225,6 +232,7 @@ class BillingService(
 
                     // If the state is PURCHASED, acknowledge the purchase if it hasn't been acknowledged yet.
                     if (!purchase.isAcknowledged && purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
+                        log("processPurchases. Acknowledge purchase for: $purchase")
                         val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
                             .setPurchaseToken(purchase.purchaseToken).build()
                         mBillingClient.acknowledgePurchase(acknowledgePurchaseParams, this)
