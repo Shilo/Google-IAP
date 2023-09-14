@@ -177,39 +177,40 @@ class BillingService(
 
     private fun processPurchases(purchasesList: List<Purchase>?, isRestore: Boolean = false) {
         if (!purchasesList.isNullOrEmpty()) {
-            log("processPurchases: " + purchasesList.size + " purchase(s)")
+            log("=== processPurchases: " + purchasesList.size + " purchase(s)")
             purchases@ for (purchase in purchasesList) {
                 // The purchase is considered successful in both PURCHASED and PENDING states.
                 val purchaseSuccess = purchase.purchaseState == Purchase.PurchaseState.PURCHASED
                         || purchase.purchaseState == Purchase.PurchaseState.PENDING
 
-                log("processPurchases. purchase: $purchase purchaseState: ${purchase.purchaseState} purchaseSuccess: $purchaseSuccess")
+                log("=== processPurchases. purchase: $purchase purchaseState: ${purchase.purchaseState} purchaseSuccess: $purchaseSuccess")
                 if (purchaseSuccess && purchase.products[0].isProductReady()) {
                     if (!isSignatureValid(purchase)) {
-                        log("processPurchases. Signature is not valid for: $purchase")
+                        log("=== processPurchases. Signature is not valid for: $purchase")
                         continue@purchases
                     }
 
-                    log("processPurchases. Grant entitlement for: $purchase")
+                    log("=== processPurchases. Grant entitlement for: $purchase")
                     // Grant entitlement to the user.
                     val productDetails = productDetails[purchase.products[0]]
                     when (productDetails?.productType) {
                         BillingClient.ProductType.INAPP -> {
                             // Consume the purchase
-                            log("processPurchases. Consume purchase for: $purchase")
+                            log("=== processPurchases. Consume purchase for: $purchase")
                             when {
                                 consumableKeys.contains(purchase.products[0]) -> {
-                                    log("processPurchases. Consuming purchase for: $purchase")
+                                    log("=== processPurchases. Consuming purchase for: $purchase")
                                     mBillingClient.consumeAsync(
                                         ConsumeParams.newBuilder()
                                             .setPurchaseToken(purchase.purchaseToken).build()
                                     ) { billingResult, _ ->
+                                        log("=== processPurchases. Consume response code: ${billingResult.responseCode}")
                                         when (billingResult.responseCode) {
-                                            log("processPurchases. Consume response code: ${billingResult.responseCode}")
                                             BillingClient.BillingResponseCode.OK -> {
-                                                log("processPurchases. Consume OK: $purchase")
+                                                log("=== processPurchases. Consume OK: $purchase")
                                                 productOwned(getPurchaseInfo(purchase), false)
                                             }
+
                                             else -> {
                                                 Log.d(
                                                     TAG,
@@ -220,7 +221,7 @@ class BillingService(
                                     }
                                 }
                                 else -> {
-                                    log("processPurchases. Not consuming purchase for: $purchase")
+                                    log("=== processPurchases. Not consuming purchase for: $purchase")
                                     productOwned(getPurchaseInfo(purchase), isRestore)
                                 }
                             }
